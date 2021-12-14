@@ -150,7 +150,7 @@ class SPFolder extends SPListObject implements SPItemInterface
      */
     public function getUrl($path = null)
     {
-        return $this->site->getHostname($this->getRelativeUrl($path));
+        return $this->site->getHostname(rawurlencode($this->getRelativeUrl($path)));
     }
 
     /**
@@ -426,6 +426,46 @@ class SPFolder extends SPListObject implements SPItemInterface
 
         $this->items = array_merge($folders, $files);
 
-        return $this->items;
+        return $this; //->items;
+    }
+
+    /**
+     * Remane a SharePoint Folder
+     *
+     * @access  public
+     * @param   array  $properties SharePoint Folder properties (Name, ...)
+     * @throws  SPException
+     * @return  SPFolder
+     */
+    public function rename(array $properties)
+    {
+        $properties = array_replace_recursive($properties, [
+            'odata.type' => 'SP.Data.Shared_x0020_DocumentsItem',
+        ]);
+
+        $body = json_encode($properties);
+
+        $this->request("_api/web/GetFolderByServerRelativeUrl('".$this->relativeUrl."')/ListItemAllFields", [
+            'headers' => [
+                'Authorization'   => 'Bearer '.$this->getSPAccessToken(),
+                'Accept'          => 'application/json',
+                'X-RequestDigest' => (string) $this->getSPFormDigest(),
+                'X-HTTP-Method'   => 'MERGE',
+                'IF-MATCH'        => '*',
+                'Content-type'    => 'application/json',
+                'Content-length'  => strlen($body),
+            ],
+
+            'query'   => [
+                '$expand' => 'ListItemAllFields/ParentList,Properties',
+            ],
+
+            'body'    => $body,
+        ], 'POST');
+
+        // Rehydration is done using the $properties array,
+        // since the SharePoint API doesn't return a response
+        // on a successful update
+        return $this->hydrate($properties, true);
     }
 }

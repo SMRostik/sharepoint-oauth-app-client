@@ -87,13 +87,18 @@ class SPSite implements SPRequesterInterface
     {
         $this->config = array_replace_recursive([
             'acs' => static::ACS,
-        ], $config);
+        ], $config["site"]);
+        // var_dump($config);
 
         // set Guzzle HTTP client
         $this->http = $http;
 
+        // var_dump($this->http->getUri());
         // set Site Hostname and Path
-        $components = parse_url($this->http->getBaseUrl());
+        // $components = parse_url($this->http->getBaseUrl());
+        $components = parse_url($config["http"]["base_uri"]);
+        // var_dump("ee");
+        // var_dump($components);
 
         if (! isset($components['scheme'], $components['host'], $components['path'])) {
             throw new SPException('The SharePoint Site URL is invalid');
@@ -180,13 +185,15 @@ class SPSite implements SPRequesterInterface
         $settings = array_replace_recursive($settings, [
             'site' => [], // SharePoint Site configuration
             'http' => [   // Guzzle HTTP Client configuration
-                'base_url' => $url,
+                'base_uri' => $url,
             ],
         ]);
 
+        // var_dump($settings);
         $http = new Client($settings['http']);
 
-        return new static($http, $settings['site']);
+        // return new static($http, $settings['site']);
+        return new static($http, $settings);
     }
 
     /**
@@ -197,7 +204,8 @@ class SPSite implements SPRequesterInterface
      * @throws  SPException
      * @return  array
      */
-    protected function parseResponse(ResponseInterface $response)
+    // protected function parseResponse(ResponseInterface $response)
+    protected function parseResponse($response)
     {
         $httpStatus = $response->getStatusCode();
         $json = json_decode($response->getBody(), true);
@@ -238,15 +246,22 @@ class SPSite implements SPRequesterInterface
      */
     public function request($url, array $options = [], $method = 'GET', $json = true)
     {
+        // var_dump("SPSite request");
+        // var_dump($url);
         try {
             $options = array_replace_recursive($options, [
                 'exceptions' => false, // avoid throwing exceptions when we get HTTP errors (4XX, 5XX)
             ]);
 
-            $response = $this->http->send($this->http->createRequest($method, $url, $options));
+            // var_dump($method, $url, $options);
+            // var_dump($this->http->createRequest($method, $url, $options));
+            // $response = $this->http->send($this->http->createRequest($method, $url, $options));
+            $response = $this->http->request($method, $url, $options);
+            // var_dump($response);
 
             return $json ? $this->parseResponse($response) : $response;
         } catch (TransferException $e) {
+            // var_dump($e);
             throw SPException::fromTransferException($e);
         }
     }
