@@ -1,6 +1,7 @@
 {
 	"name": "smrostik/sharepoint-oauth-app-client",
 	"type": "library",
+	"version": "1.0",
 	"description": "SharePoint OAuth App Client",
 	"keywords": ["sharepoint", "online", "2013", "oauth", "rest", "api", "client"],
 	"homepage": "https://github.com/smrostik/sharepoint-oauth-app-client",
